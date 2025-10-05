@@ -222,6 +222,9 @@ def auth_or_api_key_required(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        current_user = None
+        current_api_key = None
+        
         # Verificar se há token JWT
         if 'Authorization' in request.headers:
             auth_header = request.headers['Authorization']
@@ -229,6 +232,14 @@ def auth_or_api_key_required(f):
                 try:
                     token = auth_header.split(" ")[1]
                     current_user = AuthService.get_current_user(token)
+                    
+                    # SEGURANÇA: Verificar se usuário tem pelo menos um role
+                    if current_user and not current_user.roles:
+                        return jsonify({
+                            'error': 'Usuário não possui roles atribuídos. Acesso negado.',
+                            'status': 'error'
+                        }), 403
+                    
                     return f(current_user=current_user, current_api_key=None, *args, **kwargs)
                 except JWTError:
                     pass

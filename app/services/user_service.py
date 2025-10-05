@@ -47,6 +47,15 @@ class UserService:
             db.session.add(user)
             db.session.commit()
             
+            # Atribuir role 'client' automaticamente a novos usuários
+            from app.services.role_service import RoleService
+            client_role = RoleService.get_role_by_name('client')
+            if client_role:
+                user.add_role(client_role)
+                print(f"Role 'client' atribuído automaticamente ao usuário {user.email}")
+            else:
+                print(f"AVISO: Role 'client' não encontrado para o usuário {user.email}")
+            
             return user, True, 'Usuário criado com sucesso'
         
         except Exception as e:

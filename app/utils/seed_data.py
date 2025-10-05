@@ -42,11 +42,19 @@ def initialize_default_data():
                     print("Usuario administrador criado com sucesso")
                 else:
                     print("Usuario criado, mas role admin nao encontrado")
+                    return False, "Role admin nao encontrado"
             else:
                 print(f"Erro ao criar usuario admin: {message}")
                 return False, message
         else:
             print("Usuario administrador ja existe")
+            
+            # Verificar se o admin tem o role correto
+            if not admin_user.has_role('admin'):
+                admin_role = RoleService.get_role_by_name('admin')
+                if admin_role:
+                    admin_user.add_role(admin_role)
+                    print("Role admin atribuido ao usuario administrador existente")
         
         return True, "Dados padrão inicializados com sucesso"
     
