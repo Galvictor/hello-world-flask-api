@@ -10,6 +10,8 @@ Uma API simples em Flask com SQLite para demonstrar funcionalidades básicas de 
 -   **CRUD de Usuários**: Operações completas de Create, Read, Update e Delete para usuários
 -   **Autenticação JWT**: Sistema completo de autenticação com tokens JWT
 -   **API Keys**: Sistema de chaves de API para autenticação de serviços
+-   **Sistema de Roles**: Controle de acesso baseado em papéis (admin, client)
+-   **Permissões Granulares**: Sistema de permissões específicas por role
 -   **Rotas Protegidas**: Middleware para proteger endpoints que requerem autenticação
 -   **Múltiplos Tipos de Auth**: Suporte a JWT, API Key ou ambos
 -   **Banco de dados Flexível**: Suporte a SQLite, PostgreSQL e MySQL via configuração
@@ -329,6 +331,89 @@ curl http://localhost:5000/api/users \
 -   `DELETE /api/api-keys/<id>` - Deletar API Key (admin)
 -   `POST /api/api-keys/<id>/activate` - Ativar API Key (admin)
 -   `POST /api/api-keys/<id>/deactivate` - Desativar API Key (admin)
+
+## 👑 Sistema de Roles
+
+### GET `/api/roles`
+
+Lista todos os roles do sistema (requer role admin).
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+### GET `/api/users/my-roles`
+
+Lista os roles do usuário atual.
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Resposta:**
+
+```json
+{
+    "data": {
+        "roles": [
+            {
+                "id": 2,
+                "name": "client",
+                "display_name": "Cliente",
+                "description": "Usuário padrão do sistema",
+                "permissions": ["users:read_own", "users:write_own"],
+                "is_active": true
+            }
+        ],
+        "permissions": ["users:read_own", "users:write_own", "api_keys:read_own", "api_keys:write_own", "api_keys:delete_own"],
+        "total": 1
+    },
+    "message": "Seus roles listados com sucesso",
+    "status": "success"
+}
+```
+
+### Roles Padrão
+
+#### Admin
+
+-   **Permissões**: Acesso total ao sistema
+-   **Inclui**: `users:read`, `users:write`, `users:delete`, `api_keys:read`, `api_keys:write`, `api_keys:delete`, `roles:read`, `roles:write`, `roles:delete`, `system:admin`
+
+#### Client
+
+-   **Permissões**: Acesso limitado aos próprios recursos
+-   **Inclui**: `users:read_own`, `users:write_own`, `api_keys:read_own`, `api_keys:write_own`, `api_keys:delete_own`
+
+### Gerenciamento de Roles (Admin)
+
+-   `GET /api/roles` - Listar todos os roles (admin)
+-   `POST /api/roles` - Criar novo role (admin)
+-   `GET /api/roles/<id>` - Buscar role por ID (admin)
+-   `PUT /api/roles/<id>` - Atualizar role (admin)
+-   `DELETE /api/roles/<id>` - Deletar role (admin)
+-   `GET /api/users/<id>/roles` - Listar roles de um usuário (admin)
+-   `POST /api/users/<id>/roles/<role_id>` - Atribuir role a usuário (admin)
+-   `DELETE /api/users/<id>/roles/<role_id>` - Remover role de usuário (admin)
+-   `GET /api/roles/<id>/users` - Listar usuários de um role (admin)
+
+### Decoradores de Autenticação
+
+#### `@admin_required`
+
+Protege rotas que requerem role de administrador.
+
+#### `@role_required('role_name')`
+
+Protege rotas que requerem um role específico.
+
+#### `@permission_required('permission')`
+
+Protege rotas que requerem uma permissão específica.
 
 ## 👥 Endpoints de Usuários
 

@@ -28,14 +28,20 @@ def create_app():
     from app.controllers.user_controller import user_bp
     from app.controllers.auth_controller import auth_bp
     from app.controllers.api_key_controller import api_key_bp
+    from app.controllers.role_controller import role_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(user_bp, url_prefix='/api')
     app.register_blueprint(api_key_bp, url_prefix='/api')
+    app.register_blueprint(role_bp, url_prefix='/api')
     
     # Criar tabelas do banco de dados
     with app.app_context():
         db.create_all()
+        
+        # Inicializar dados padrão se necessário
+        from app.utils.seed_data import initialize_default_data
+        initialize_default_data()
     
     return app

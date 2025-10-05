@@ -6,5 +6,6 @@ from .main_controller import main_bp
 from .user_controller import user_bp
 from .auth_controller import auth_bp
 from .api_key_controller import api_key_bp
+from .role_controller import role_bp
 
-__all__ = ['main_bp', 'user_bp', 'auth_bp', 'api_key_bp']
+__all__ = ['main_bp', 'user_bp', 'auth_bp', 'api_key_bp', 'role_bp']

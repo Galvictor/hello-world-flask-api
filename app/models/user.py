@@ -5,6 +5,15 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
+# Tabela de relacionamento many-to-many
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    db.Column('assigned_at', db.DateTime, default=datetime.utcnow),
+    db.Column('assigned_by', db.Integer, db.ForeignKey('users.id'), nullable=True),
+    db.Column('is_active', db.Boolean, default=True)
+)
+
 class User(db.Model):
     """Modelo de usuário com campos básicos e autenticação"""
     
@@ -19,6 +28,9 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Relacionamento com roles (many-to-many)
+    roles = db.relationship('Role', secondary=user_roles, back_populates='users', primaryjoin='User.id == user_roles.c.user_id', secondaryjoin='Role.id == user_roles.c.role_id')
+    
     def __repr__(self):
         """Representação string do objeto"""
         return f'<User {self.name}>'
@@ -31,7 +43,7 @@ class User(db.Model):
         """Verifica se a senha está correta"""
         return check_password_hash(self.password_hash, password)
     
-    def to_dict(self, include_sensitive=False):
+    def to_dict(self, include_sensitive=False, include_roles=False):
         """Converte o objeto para dicionário"""
         data = {
             'id': self.id,
@@ -44,6 +56,11 @@ class User(db.Model):
         
         if include_sensitive:
             data['password_hash'] = self.password_hash
+        
+        if include_roles:
+            data['roles'] = [role.to_dict() for role in self.roles if role.is_active]
+            data['role_names'] = self.get_role_names()
+            data['permissions'] = self.get_all_permissions()
             
         return data
     
@@ -100,3 +117,38 @@ class User(db.Model):
                 return False, 'Senha deve ter pelo menos 6 caracteres'
         
         return True, None
+    
+    def has_role(self, role_name):
+        """Verifica se o usuário tem um role específico"""
+        return any(role.name == role_name for role in self.roles if role.is_active)
+    
+    def has_permission(self, permission):
+        """Verifica se o usuário tem uma permissão específica"""
+        for role in self.roles:
+            if role.is_active and role.has_permission(permission):
+                return True
+        return False
+    
+    def add_role(self, role):
+        """Adiciona um role ao usuário"""
+        if role not in self.roles:
+            self.roles.append(role)
+            db.session.commit()
+    
+    def remove_role(self, role):
+        """Remove um role do usuário"""
+        if role in self.roles:
+            self.roles.remove(role)
+            db.session.commit()
+    
+    def get_role_names(self):
+        """Retorna uma lista com os nomes dos roles ativos do usuário"""
+        return [role.name for role in self.roles if role.is_active]
+    
+    def get_all_permissions(self):
+        """Retorna todas as permissões do usuário (baseadas nos roles)"""
+        permissions = set()
+        for role in self.roles:
+            if role.is_active:
+                permissions.update(role.permissions)
+        return list(permissions)

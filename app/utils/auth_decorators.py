@@ -107,24 +107,114 @@ def api_key_required(f):
 def admin_required(f):
     """
     Decorador para proteger rotas que requerem privilégios de administrador
-    
-    Nota: Por enquanto, todos os usuários ativos são considerados administradores.
-    Em uma implementação mais robusta, você adicionaria um campo 'role' ao modelo User.
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Primeiro aplicar autenticação
-        auth_result = token_required(f)(*args, **kwargs)
+        # Aplicar autenticação primeiro
+        token = None
         
-        # Se retornou uma resposta de erro (não é uma função), retornar
-        if not callable(auth_result):
-            return auth_result
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                if auth_header.startswith('Bearer '):
+                    token = auth_header.split(" ")[1]
+            except IndexError:
+                pass
         
-        # Por enquanto, qualquer usuário autenticado é considerado admin
-        # Em uma implementação futura, você verificaria o role do usuário
-        return auth_result
+        if not token:
+            return jsonify({
+                'error': 'Token de acesso é obrigatório',
+                'status': 'error'
+            }), 401
+        
+        try:
+            # Verificar token e obter usuário
+            current_user = AuthService.get_current_user(token)
+            
+            # Verificar se o usuário tem role de admin
+            if not current_user or not current_user.has_role('admin'):
+                return jsonify({
+                    'error': 'Acesso negado. Privilégios de administrador são necessários.',
+                    'status': 'error'
+                }), 403
+            
+            # Executar função com o usuário autenticado
+            return f(current_user, *args, **kwargs)
+            
+        except JWTError:
+            return jsonify({
+                'error': 'Token inválido ou expirado',
+                'status': 'error'
+            }), 401
+        except Exception as e:
+            return jsonify({
+                'error': f'Erro de autenticação: {str(e)}',
+                'status': 'error'
+            }), 500
     
     return decorated
+
+def permission_required(permission):
+    """
+    Decorador para proteger rotas que requerem uma permissão específica
+    
+    Args:
+        permission (str): Permissão necessária (ex: 'users:read', 'api_keys:write')
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            # Primeiro aplicar autenticação
+            auth_result = token_required(f)(*args, **kwargs)
+            
+            # Se retornou uma resposta de erro (não é uma função), retornar
+            if not callable(auth_result):
+                return auth_result
+            
+            # Verificar se o usuário tem a permissão necessária
+            current_user = args[0] if args else None
+            
+            if not current_user or not current_user.has_permission(permission):
+                return jsonify({
+                    'error': f'Acesso negado. Permissão "{permission}" é necessária.',
+                    'status': 'error'
+                }), 403
+            
+            return auth_result
+        
+        return decorated
+    return decorator
+
+def role_required(role_name):
+    """
+    Decorador para proteger rotas que requerem um role específico
+    
+    Args:
+        role_name (str): Nome do role necessário (ex: 'admin', 'client')
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            # Primeiro aplicar autenticação
+            auth_result = token_required(f)(*args, **kwargs)
+            
+            # Se retornou uma resposta de erro (não é uma função), retornar
+            if not callable(auth_result):
+                return auth_result
+            
+            # Verificar se o usuário tem o role necessário
+            current_user = args[0] if args else None
+            
+            if not current_user or not current_user.has_role(role_name):
+                return jsonify({
+                    'error': f'Acesso negado. Role "{role_name}" é necessário.',
+                    'status': 'error'
+                }), 403
+            
+            return auth_result
+        
+        return decorated
+    return decorator
 
 def auth_or_api_key_required(f):
     """
