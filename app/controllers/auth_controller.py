@@ -12,7 +12,73 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/auth/register', methods=['POST'])
 def register():
-    """Registrar novo usuário"""
+    """
+    Registrar novo usuário
+    ---
+    tags:
+      - Auth
+    summary: Criar nova conta de usuário
+    description: Registra um novo usuário no sistema com role 'client' automático
+    parameters:
+      - in: body
+        name: user_data
+        description: Dados do usuário
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+            - password
+          properties:
+            name:
+              type: string
+              example: João Silva
+              description: Nome completo do usuário
+            email:
+              type: string
+              format: email
+              example: joao@email.com
+              description: Email do usuário
+            password:
+              type: string
+              example: senha123
+              description: Senha do usuário (mínimo 6 caracteres)
+    responses:
+      201:
+        description: Usuário criado com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Usuário criado com sucesso
+            data:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: João Silva
+                    email:
+                      type: string
+                      example: joao@email.com
+                access_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      400:
+        description: Dados inválidos ou email já cadastrado
+      500:
+        description: Erro interno do servidor
+    """
     try:
         data = request.get_json()
         
@@ -54,7 +120,69 @@ def register():
 
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
-    """Fazer login do usuário"""
+    """
+    Fazer login do usuário
+    ---
+    tags:
+      - Auth
+    summary: Autenticar usuário
+    description: Realiza login e retorna token JWT para autenticação
+    parameters:
+      - in: body
+        name: credentials
+        description: Credenciais de login
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              format: email
+              example: joao@email.com
+              description: Email do usuário
+            password:
+              type: string
+              example: senha123
+              description: Senha do usuário
+    responses:
+      200:
+        description: Login realizado com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Login realizado com sucesso
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  description: Token JWT para autenticação
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: João Silva
+                    email:
+                      type: string
+                      example: joao@email.com
+      401:
+        description: Credenciais inválidas
+      400:
+        description: Dados inválidos
+    """
     try:
         data = request.get_json()
         

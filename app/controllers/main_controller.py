@@ -9,7 +9,29 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def hello_world():
-    """Endpoint principal que retorna uma mensagem de Hello World"""
+    """
+    Endpoint principal da API
+    ---
+    tags:
+      - Main
+    summary: Mensagem de boas-vindas
+    description: Retorna uma mensagem de Hello World e informações básicas da API
+    responses:
+      200:
+        description: Mensagem de boas-vindas
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: Hello, World!
+            status:
+              type: string
+              example: success
+            api:
+              type: string
+              example: Flask API com SQLite - Arquitetura em Camadas
+    """
     return jsonify({
         'message': 'Hello, World!',
         'status': 'success',
@@ -18,7 +40,32 @@ def hello_world():
 
 @main_bp.route('/health')
 def health_check():
-    """Endpoint para verificar se a API está funcionando"""
+    """
+    Verificação de saúde da API
+    ---
+    tags:
+      - Main
+    summary: Status da aplicação
+    description: Verifica se a API está funcionando corretamente
+    responses:
+      200:
+        description: API funcionando corretamente
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: healthy
+            message:
+              type: string
+              example: API está funcionando corretamente
+            database:
+              type: string
+              example: SQLite conectado
+            architecture:
+              type: string
+              example: Layered Architecture
+    """
     return jsonify({
         'status': 'healthy',
         'message': 'API está funcionando corretamente',

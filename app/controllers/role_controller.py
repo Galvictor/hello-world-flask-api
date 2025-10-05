@@ -13,7 +13,61 @@ role_bp = Blueprint('roles', __name__)
 @role_bp.route('/roles', methods=['GET'])
 @admin_required
 def get_roles(current_user):
-    """Listar todos os roles (requer privilégios de admin)"""
+    """
+    Listar todos os roles
+    ---
+    tags:
+      - Roles
+    summary: Obter lista de roles
+    description: Retorna todos os roles do sistema (requer privilégios de admin)
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Lista de roles obtida com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Roles listados com sucesso
+            data:
+              type: object
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: admin
+                      display_name:
+                        type: string
+                        example: Administrador
+                      description:
+                        type: string
+                        example: Acesso total ao sistema
+                      permissions:
+                        type: string
+                        example: users:read users:write users:delete
+                      is_active:
+                        type: boolean
+                        example: true
+                total:
+                  type: integer
+                  example: 3
+      401:
+        description: Token JWT obrigatório
+      403:
+        description: Privilégios de administrador necessários
+    """
     try:
         roles = RoleService.get_all_roles()
         roles_data = [role.to_dict() for role in roles]

@@ -12,7 +12,59 @@ user_bp = Blueprint('users', __name__)
 @user_bp.route('/users', methods=['GET'])
 @auth_or_api_key_required
 def get_users(current_user=None, current_api_key=None):
-    """Listar todos os usuários (requer JWT token ou API Key)"""
+    """
+    Listar todos os usuários
+    ---
+    tags:
+      - Users
+    summary: Obter lista de usuários
+    description: Retorna todos os usuários do sistema (requer JWT token ou API Key)
+    security:
+      - Bearer: []
+      - ApiKey: []
+    responses:
+      200:
+        description: Lista de usuários obtida com sucesso
+        schema:
+          type: object
+          properties:
+            status:
+              type: string
+              example: success
+            message:
+              type: string
+              example: Usuários listados com sucesso
+            data:
+              type: object
+              properties:
+                users:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: João Silva
+                      email:
+                        type: string
+                        example: joao@email.com
+                      is_active:
+                        type: boolean
+                        example: true
+                      created_at:
+                        type: string
+                        format: date-time
+                total:
+                  type: integer
+                  example: 5
+      401:
+        description: Token JWT ou API Key obrigatório
+      403:
+        description: Usuário sem roles atribuídos
+    """
     try:
         users = UserService.get_all_users()
         users_data = [user.to_dict() for user in users]
